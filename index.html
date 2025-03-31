@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Winner Draw</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .hidden { display: none; }
+        .winner-info { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Random Winner Draw</h1>
+    <input type="file" id="csvFile" accept=".csv">
+    <button onclick="drawWinner()">Draw Winner</button>
+
+    <div class="winner-info hidden" id="winnerInfo">
+        <p>Order ID: <span id="orderId"></span></p>
+        <p>Day Placed: <span id="dayPlaced"></span></p>
+        <p>Prize Amount: $<span id="prizeAmount"></span></p>
+        <button onclick="revealOrderId()">Reveal Hidden Characters</button>
+    </div>
+
+    <script>
+        function drawWinner() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files.length) {
+                alert('Please upload a CSV file.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const csvData = event.target.result;
+                const rows = csvData.split('\n').slice(1).filter(row => row.trim());
+                const randomRow = rows[Math.floor(Math.random() * rows.length)];
+                const columns = randomRow.split(',');
+
+                const orderId = columns[2];
+                const dayPlaced = new Date(columns[0]).toDateString();
+                const paymentAmount = parseFloat(columns[8]);
+                const prizeAmount = (paymentAmount * 0.1).toFixed(2);
+
+                const hiddenOrderId = orderId.replace(/.(?=.{4})/g, '*');
+
+                document.getElementById('orderId').textContent = hiddenOrderId;
+                document.getElementById('dayPlaced').textContent = dayPlaced;
+                document.getElementById('prizeAmount').textContent = prizeAmount;
+                document.getElementById('winnerInfo').classList.remove('hidden');
+
+                document.cookie = `winnerInfo=${hiddenOrderId},${dayPlaced},${prizeAmount};path=/`;
+            };
+            reader.readAsText(file);
+        }
+
+        function revealOrderId() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files.length) {
+                alert('Please upload a CSV file.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const csvData = event.target.result;
+                const rows = csvData.split('\n').slice(1).filter(row => row.trim());
+                const randomRow = rows[Math.floor(Math.random() * rows.length)];
+                const columns = randomRow.split(',');
+
+                const orderId = columns[2];
+
+                document.getElementById('orderId').textContent = orderId;
+            };
+            reader.readAsText(file);
+        }
+
+        // Load winner info from cookies if available
+        window.onload = function() {
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                const [name, value] = cookie.split('=').map(c => c.trim());
+                acc[name] = value;
+                return acc;
+            }, {});
+
+            if (cookies.winnerInfo) {
+                const [hiddenOrderId, dayPlaced, prizeAmount] = cookies.winnerInfo.split(',');
+                document.getElementById('orderId').textContent = hiddenOrderId;
+                document.getElementById('dayPlaced').textContent = dayPlaced;
+                document.getElementById('prizeAmount').textContent = prizeAmount;
+                document.getElementById('winnerInfo').classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
