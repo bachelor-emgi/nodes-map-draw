@@ -1,28 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random Winner Draw</title>
+    <title>Nodes Map Lottery</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .hidden { display: none; }
-        .winner-info { margin-top: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #212121;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload label {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            color: black;
+            background-color: #FFFFFF;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .file-upload label:hover {
+            background-color: #16532A;
+            transform: scale(1.05);
+            color: #fff;
+        }
+
+        .file-upload label:active {
+            transform: scale(1);
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 1em;
+            color: #bbb;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            color: #fff;
+            background-color: #269B4D;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        button:hover {
+            background-color: #16532A;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .winner-info {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            color: #fff;
+        }
+
+        .winner-info p {
+            margin: 10px 0;
+        }
+
+        .circle-container {
+            position: relative;
+            background: url('pepecoin-face.svg') center center;
+            background-size: cover;
+            border-radius: 50%;
+            width: 700px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .circle-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.801);
+            border-radius: 50%;
+        }
+
+        .circle-container>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .rain {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            background: url('pepecoin.svg') no-repeat center center;
+            background-size: contain;
+            animation: fall 5s linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
-<body>
-    <h1>Random Winner Draw</h1>
-    <input type="file" id="csvFile" accept=".csv">
-    <button onclick="drawWinner()">Draw Winner</button>
 
-    <div class="winner-info hidden" id="winnerInfo">
-        <p>Order ID: <span id="orderId"></span></p>
-        <p>Day Placed: <span id="dayPlaced"></span></p>
-        <p>Prize Amount: $<span id="prizeAmount"></span></p>
-        <button onclick="revealOrderId()">Reveal Hidden Characters</button>
+<body>
+    <div class="circle-container">
+        <h1>Nodes Map Lottery</h1>
+        <div class="file-upload">
+            <input type="file" id="csvFile" accept=".csv" onchange="displayFileName()">
+            <label for="csvFile">Upload CSV</label>
+            <div class="file-name" id="fileName"></div>
+        </div>
+        <button onclick="drawWinner()">Draw Winner</button>
+
+        <div class="winner-info hidden" id="winnerInfo">
+            <p>Order ID: <span id="orderId"></span></p>
+            <p>Day Placed: <span id="dayPlaced"></span></p>
+            <p>Prize Amount: <span id="prizeAmount"></span> Pepecoins</p>
+            <button onclick="revealOrderId()">Reveal Hidden Characters</button>
+        </div>
     </div>
 
     <script>
+        let currentWinner = null;
+        let prizeAmount = 0;
+
+        function displayFileName() {
+            const fileInput = document.getElementById('csvFile');
+            const fileName = fileInput.files[0] ? fileInput.files[0].name : '';
+            document.getElementById('fileName').textContent = fileName ? `File: ${fileName}` : '';
+        }
+
         function drawWinner() {
             const fileInput = document.getElementById('csvFile');
             if (!fileInput.files.length) {
@@ -32,53 +192,59 @@
 
             const file = fileInput.files[0];
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = function (event) {
                 const csvData = event.target.result;
                 const rows = csvData.split('\n').slice(1).filter(row => row.trim());
+
+                // Calculate total PaymentAmount
+                let totalPaymentAmount = 0;
+                rows.forEach(row => {
+                    const columns = row.split(',');
+                    totalPaymentAmount += parseFloat(columns[8]);
+                });
+                prizeAmount = (totalPaymentAmount * 0.1).toFixed(2);
+
+                // Select a random winner
                 const randomRow = rows[Math.floor(Math.random() * rows.length)];
                 const columns = randomRow.split(',');
 
                 const orderId = columns[2];
                 const dayPlaced = new Date(columns[0]).toDateString();
-                const paymentAmount = parseFloat(columns[8]);
-                const prizeAmount = (paymentAmount * 0.1).toFixed(2);
+                const hiddenOrderId = orderId.replace(/.(?=.{8})/g, '*');
 
-                const hiddenOrderId = orderId.replace(/.(?=.{4})/g, '*');
+                currentWinner = { orderId, dayPlaced };
 
                 document.getElementById('orderId').textContent = hiddenOrderId;
                 document.getElementById('dayPlaced').textContent = dayPlaced;
                 document.getElementById('prizeAmount').textContent = prizeAmount;
                 document.getElementById('winnerInfo').classList.remove('hidden');
 
-                document.cookie = `winnerInfo=${hiddenOrderId},${dayPlaced},${prizeAmount};path=/`;
+                document.cookie = `winnerInfo=${orderId},${dayPlaced},${prizeAmount};path=/`;
             };
             reader.readAsText(file);
         }
 
         function revealOrderId() {
-            const fileInput = document.getElementById('csvFile');
-            if (!fileInput.files.length) {
-                alert('Please upload a CSV file.');
-                return;
+            if (currentWinner) {
+                document.getElementById('orderId').textContent = currentWinner.orderId;
+            } else {
+                const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                    const [name, value] = cookie.split('=').map(c => c.trim());
+                    acc[name] = value;
+                    return acc;
+                }, {});
+
+                if (cookies.winnerInfo) {
+                    const [orderId] = cookies.winnerInfo.split(',');
+                    document.getElementById('orderId').textContent = orderId;
+                } else {
+                    alert('No winner has been drawn yet.');
+                }
             }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const csvData = event.target.result;
-                const rows = csvData.split('\n').slice(1).filter(row => row.trim());
-                const randomRow = rows[Math.floor(Math.random() * rows.length)];
-                const columns = randomRow.split(',');
-
-                const orderId = columns[2];
-
-                document.getElementById('orderId').textContent = orderId;
-            };
-            reader.readAsText(file);
         }
 
         // Load winner info from cookies if available
-        window.onload = function() {
+        window.onload = function () {
             const cookies = document.cookie.split(';').reduce((acc, cookie) => {
                 const [name, value] = cookie.split('=').map(c => c.trim());
                 acc[name] = value;
@@ -86,13 +252,31 @@
             }, {});
 
             if (cookies.winnerInfo) {
-                const [hiddenOrderId, dayPlaced, prizeAmount] = cookies.winnerInfo.split(',');
+                const [orderId, dayPlaced, prizeAmount] = cookies.winnerInfo.split(',');
+                const hiddenOrderId = orderId.replace(/.(?=.{4})/g, '*');
+
                 document.getElementById('orderId').textContent = hiddenOrderId;
                 document.getElementById('dayPlaced').textContent = dayPlaced;
                 document.getElementById('prizeAmount').textContent = prizeAmount;
                 document.getElementById('winnerInfo').classList.remove('hidden');
+
+                currentWinner = { orderId, dayPlaced };
             }
         };
+
+        // Create raining pepecoins
+        function createPepeRain() {
+            for (let i = 0; i < 20; i++) {
+                const rainDrop = document.createElement('div');
+                rainDrop.classList.add('rain');
+                rainDrop.style.left = `${Math.random() * 100}vw`;
+                rainDrop.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                document.body.appendChild(rainDrop);
+            }
+        }
+
+        createPepeRain();
     </script>
 </body>
+
 </html>
